@@ -15,6 +15,8 @@ const flash=require("connect-flash");
 const passport=require("passport");
 const LocalStrategy=require("passport-local");
 const User= require("./models/user.js");
+const Listing=require("../models/listing.js");
+const wrapAsync=require("../utils/wrapAsync.js");
 
 const listingRouter=require("./routes/listing.js");
 const reviewRouter=require("./routes/review.js");
@@ -73,6 +75,11 @@ const sessionOptions={
 app.use(session(sessionOptions));
 app.use(flash());
 
+app.get("/",wrapAsync(async(req,res)=>{
+    let listings = await Listing.find({});
+    res.render("listings/index.ejs", { listings });
+}));
+
 //7 Phase-2 partD
 app.use(passport.initialize());
 app.use(passport.session());
@@ -87,16 +94,6 @@ app.use((req,res,next)=>{
   res.locals.error=req.flash("error");
   res.locals.currUser=req.user;
   next();
-});
-
-app.get("/demouser",async(req,res)=>{
-  let fakeUser=new User({
-    email:"student@gmail.com",
-    username:"Radha"
-  });
-
-  let registeredUser=await User.register(fakeUser,"RadheRadhe");
-  res.send(registeredUser);
 });
 
 //listings-Phase1 - Only 1 line
