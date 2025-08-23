@@ -75,10 +75,6 @@ const sessionOptions={
 app.use(session(sessionOptions));
 app.use(flash());
 
-app.get("/",wrapAsync(async(req,res)=>{
-    let listings = await Listing.find({});
-    res.render("listings/index.ejs", { listings });
-}));
 
 //7 Phase-2 partD
 app.use(passport.initialize());
@@ -96,6 +92,10 @@ app.use((req,res,next)=>{
   next();
 });
 
+app.get("/",wrapAsync(async(req,res)=>{
+    let listings = await Listing.find({});
+    res.render("listings/index.ejs", { listings });
+}));
 //listings-Phase1 - Only 1 line
 app.use("/listings",listingRouter);
 //Phase-2 Review Model
