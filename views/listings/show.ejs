@@ -20,6 +20,38 @@
       </div>
     </div>
         <br />
+        <% if(currUser && !currUser._id.equals(listing.owner._id)){ %>
+          <div class="col-6 offset-3 mb-3">
+            <div class="card p-3">
+              <h4>Request a booking</h4>
+              <p>&#8377;<%=listing.price.toLocaleString("en-IN")%> per night. Your request must be confirmed by the host.</p>
+              <form method="post" action="/listings/<%=listing._id%>/bookings" class="needs-validation" novalidate>
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label" for="checkIn">Check-in</label>
+                    <input class="form-control" type="date" id="checkIn" name="booking[checkIn]" min="<%=new Date().toISOString().slice(0,10)%>" required/>
+                    <div class="invalid-feedback">Choose a valid check-in date.</div>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label" for="checkOut">Check-out</label>
+                    <input class="form-control" type="date" id="checkOut" name="booking[checkOut]" min="<%=new Date().toISOString().slice(0,10)%>" required/>
+                    <div class="invalid-feedback">Check-out must be after check-in.</div>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label" for="guests">Guests</label>
+                    <input class="form-control" type="number" id="guests" name="booking[guests]" min="1" value="1" required/>
+                    <div class="invalid-feedback">At least one guest is required.</div>
+                  </div>
+                </div>
+                <button class="btn btn-dark" type="submit">Send booking request</button>
+              </form>
+            </div>
+          </div>
+        <% } else if(!currUser){ %>
+          <div class="col-6 offset-3 mb-3">
+            <p><a href="/login">Log in</a> to request a booking.</p>
+          </div>
+        <% } %>
         <% if(currUser && currUser._id.equals(listing.owner._id)){%>
               <div class="btns">
                   <a href="/listings/<%=listing._id%>/edit" class="btn btn-dark col-1 offset-3 edit-btn"

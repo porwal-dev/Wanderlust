@@ -7,6 +7,7 @@ const listingController = require("../controllers/listings.js");
 const multer=require("multer");
 const {storage}=require("../cloudConfig.js");
 const upload=multer({storage});
+const bookingController=require("../controllers/bookings.js");
 
 //Index And Create Route
 router.route("/")
@@ -20,6 +21,7 @@ router.route("/")
 
 //New Route
 router.get("/new", isLoggedIn,listingController.renderNewForm);
+router.post("/:id/bookings",isLoggedIn,wrapAsync(bookingController.createBooking));
 
 //Show, Update, Delete Route
 router.route("/:id")

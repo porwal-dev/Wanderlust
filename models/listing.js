@@ -1,6 +1,7 @@
 const mongoose=require("mongoose");
 const {Schema}=mongoose;
 const Review=require("./review.js");
+const Booking=require("./booking.js");
 const listingCategories=require("../utils/listingCategories.js");
 
 let listingSchema=new mongoose.Schema({
@@ -57,9 +58,13 @@ let listingSchema=new mongoose.Schema({
 
 //Handling Delete Listing
 listingSchema.post("findOneAndDelete",async(listing)=>{
+    if(!listing){
+        return;
+    }
     if(listing.reviews.length){
         await Review.deleteMany({_id: {$in: listing.reviews}});
     }
+    await Booking.deleteMany({listing:listing._id});
 });
 
 let Listing=mongoose.model("Listing",listingSchema);

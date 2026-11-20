@@ -15,6 +15,10 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 - Edit and delete listings owned by the currently logged-in user.
 - Upload listing images to Cloudinary.
 - Automatically geocode listing locations with Mapbox and store geographic coordinates.
+- Request a stay by selecting check-in/check-out dates and guest count.
+- Hosts can confirm or decline pending booking requests for their own listings.
+- Guests can view and cancel their pending or confirmed bookings.
+- Confirmed bookings prevent other requests for overlapping dates from being confirmed.
 
 ### User accounts
 - Sign up with a username, email, and password.
@@ -65,20 +69,24 @@ Wanderlust/
 ├── schema.js              # Joi validation schemas
 ├── controllers/
 │   ├── listings.js        # Listing CRUD and geocoding logic
+│   ├── bookings.js        # Guest requests, bookings, and host decisions
 │   ├── reviews.js         # Review create/delete logic
 │   └── user.js            # Signup, login, and logout logic
 ├── models/
 │   ├── listing.js         # Listing schema and review cleanup hook
+│   ├── booking.js         # Booking dates, guest, price snapshot, and status
 │   ├── review.js          # Review schema
 │   └── user.js            # Passport Local user schema
 ├── routes/
 │   ├── listing.js         # /listings routes
+│   ├── bookings.js        # Guest and host booking-management routes
 │   ├── review.js          # Nested review routes
 │   └── user.js            # Signup, login, and logout routes
 ├── views/
 │   ├── layouts/           # Shared page layout
 │   ├── includes/          # Navbar and flash/footer partials
 │   ├── listings/          # Listing pages and error page
+│   ├── bookings/          # Guest bookings and host requests
 │   └── users/             # Signup and login pages
 ├── public/
 │   ├── css/               # Application styles
@@ -116,6 +124,12 @@ Wanderlust/
 - Creation date
 - Authoring user
 
+### Booking
+- Listing and guest references
+- Check-in/check-out dates and guest count
+- Nightly-price and total-price snapshots
+- Status: pending, confirmed, declined, or cancelled
+
 ## Routes
 
 | Method | Route | Purpose |
@@ -124,10 +138,16 @@ Wanderlust/
 | `GET` | `/listings` | Listing index |
 | `GET` | `/listings/new` | New-listing form |
 | `POST` | `/listings` | Create listing |
+| `POST` | `/listings/:id/bookings` | Request a booking |
 | `GET` | `/listings/:id` | Listing details |
 | `GET` | `/listings/:id/edit` | Edit-listing form |
 | `PUT` | `/listings/:id` | Update listing |
 | `DELETE` | `/listings/:id` | Delete listing |
+| `GET` | `/bookings` | View your guest bookings |
+| `GET` | `/bookings/host` | View requests for your listings |
+| `POST` | `/bookings/:bookingId/confirm` | Confirm a pending request |
+| `POST` | `/bookings/:bookingId/decline` | Decline a pending request |
+| `POST` | `/bookings/:bookingId/cancel` | Cancel your booking |
 | `POST` | `/listings/:id/reviews` | Add review |
 | `DELETE` | `/listings/:id/reviews/:reviewId` | Delete review |
 | `GET/POST` | `/signup` | Signup form and account creation |
@@ -201,8 +221,11 @@ Use it only on a disposable database and with a matching user ID if you want see
 
 ## Authorization Rules
 
-- Users must be logged in to create listings or reviews.
+- Users must be logged in to create listings, reviews, or booking requests.
 - Only a listing owner can edit or delete that listing.
+- Only a listing owner can confirm or decline its booking requests.
+- Guests can only view or cancel their own bookings.
+- Listings with pending or confirmed bookings cannot be deleted.
 - Only a review author can delete that review.
 - The server validates listing and review forms with Joi.
 - The UI also performs Bootstrap browser validation.
@@ -214,7 +237,7 @@ The application includes custom HTTP errors and an async route wrapper. Invalid 
 ## Current Limitations
 
 - The project has no automated test suite (`npm test` is only a placeholder).
-- No booking or payment flow is implemented.
+- Booking requests require host approval; payment processing and instant booking are not implemented.
 - The 18% GST shown on listing cards is a UI demonstration; it is not connected to a checkout calculation.
 - The seed script uses a fixed owner ID and a separate local database connection.
 - Cloudinary, Mapbox, and MongoDB credentials must be configured before the related features can work.

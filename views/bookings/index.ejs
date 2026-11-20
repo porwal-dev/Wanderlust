@@ -1,0 +1,34 @@
+<% layout("/layouts/boilerplate") %>
+<div class="row mt-4">
+  <div class="col-10 offset-1">
+    <h2>My bookings</h2>
+    <p>Track requests you have sent to listing hosts.</p>
+    <% if(bookings.length){ %>
+      <% for(let booking of bookings){ %>
+        <div class="card mb-3 p-3">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h4><%=booking.listing ? booking.listing.title : "Listing unavailable"%></h4>
+              <% if(booking.listing){ %>
+                <p class="mb-1"><%=booking.listing.location%>, <%=booking.listing.country%></p>
+              <% } %>
+              <p class="mb-1">Check-in: <%=booking.checkIn.toLocaleDateString()%></p>
+              <p class="mb-1">Check-out: <%=booking.checkOut.toLocaleDateString()%></p>
+              <p class="mb-1">Guests: <%=booking.guests%></p>
+              <p class="mb-1">Total: &#8377;<%=booking.totalPrice.toLocaleString("en-IN")%></p>
+            </div>
+            <span class="badge text-bg-<%=booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : 'secondary'%>"><%=booking.status%></span>
+          </div>
+          <% if(booking.status === "pending" || booking.status === "confirmed"){ %>
+            <form method="post" action="/bookings/<%=booking._id%>/cancel" class="mt-2">
+              <button class="btn btn-outline-danger btn-sm" type="submit">Cancel booking</button>
+            </form>
+          <% } %>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div class="alert alert-info">You have not requested any bookings yet. Browse listings to get started.</div>
+      <a class="btn btn-dark" href="/listings">Explore stays</a>
+    <% } %>
+  </div>
+</div>

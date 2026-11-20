@@ -21,6 +21,7 @@ const listingController=require("./controllers/listings.js");
 const listingRouter=require("./routes/listing.js");
 const reviewRouter=require("./routes/review.js");
 const userRouter=require("./routes/user.js");
+const bookingRouter=require("./routes/bookings.js");
 
 const dbUrl=process.env.ATLASDB_URL;
 
@@ -99,6 +100,7 @@ app.use("/listings",listingRouter);
 app.use("/listings/:id/reviews",reviewRouter);
 //User Model
 app.use("/",userRouter);
+app.use("/bookings",bookingRouter);
 
 
 //Wrong request

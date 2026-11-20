@@ -1,4 +1,5 @@
 const Listing=require("../models/listing.js");
+const Booking=require("../models/booking.js");
 const mbxgeocodingClient = require('@mapbox/mapbox-sdk/services/geocoding');
 const Joi=require("joi");
 const listingCategories=require("../utils/listingCategories.js");
@@ -148,6 +149,14 @@ module.exports.createListing=async (req, res, next) => {
 
   module.exports.destroyListing=async (req, res) => {
     let { id } = req.params;
+    const activeBooking=await Booking.exists({
+      listing:id,
+      status:{$in:["pending","confirmed"]}
+    });
+    if(activeBooking){
+      req.flash("error","This listing has pending or confirmed bookings and cannot be deleted.");
+      return res.redirect(`/listings/${id}`);
+    }
     await Listing.findByIdAndDelete(id);
     req.flash("success","Listing deleted Successfully!")
     res.redirect("/listings");
