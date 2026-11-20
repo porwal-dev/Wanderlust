@@ -1,73 +1,74 @@
 <% layout("/layouts/boilerplate") %>
-<body>
-   <div id="filters">
-    <div class="filter">
-      <div><i class="fa-solid fa-fire"></i></div>
-      <p>Trending</p>
+<div class="listing-filter-area">
+  <form method="get" action="/listings">
+    <input type="hidden" name="q" value="<%=filters.q%>"/>
+    <div id="filters">
+      <button type="submit" class="filter filter-button <%=filters.category ? '' : 'active'%>" name="category" value="">
+        <div><i class="fa-solid fa-border-all"></i></div>
+        <p>All stays</p>
+      </button>
+      <% for(let category of categories){ %>
+        <button type="submit" class="filter filter-button <%=filters.category === category.name ? 'active' : ''%>" name="category" value="<%=category.name%>">
+          <div><i class="<%=category.icon%>"></i></div>
+          <p><%=category.name%></p>
+        </button>
+      <% } %>
     </div>
-    <div class="filter">
-      <div><i class="fa-solid fa-bed"></i></div>
-      <p>Rooms</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-solid fa-mountain-city"></i></div>
-      <p>Iconic Cities</p>
-    </div>
-    <div class="filter">
-    <div><i class="fa-solid fa-mountain"></i></div>
-      <p>Mountains</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-brands fa-fort-awesome"></i></div>
-      <p>Castles</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-solid fa-person-swimming"></i></div>
-      <p>Amazing Pools</p>
-    </div>
-        <div class="filter">
-    <div><i class="fa-solid fa-campground"></i></div>
-      <p>Camping</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-solid fa-cow"></i></div>
-      <p>Farms</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-regular fa-snowflake"></i></div>
-      <p>Arctic</p>
-    </div>
-    <div class="filter">
-      <div><i class="fa-solid fa-igloo"></i></div>
-      <p>Domes</p>
-    </div>
-    <!-- <div class="filter">
-      <div><i class="fa-solid fa-ship"></i></div>
-      <p>Boats</p>
-    </div> -->
-    <div class="tax-toggle">
-      <div class="form-check-reverse form-switch">
-      <input class="form-check-input" type="checkbox" role="switch" id="switchCheckDefault">
-      <label class="form-check-label" for="switchCheckDefault">Display total after taxes</label>
-    </div>
-    </div>
-   </div>
-  <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 mt-3">
-    <%for(listing of listings){%>
-    <a href="/listings/<%=listing._id%>" class="listing-link">
-      <div class="listing-card col card">
-        <img src= <%= listing.image.url %> class="card-img-top"
-        alt="listing-image" style="height: 20rem" />
-        <div class="card-img-overlay"></div>
-        <div class="card-body">
-          <p class="card-text">
-            <b><%=listing.title%></b><br />
-            &#8377;<%=listing.price.toLocaleString("en-IN")%>/night
-            <i class="tax-info">&nbsp;&nbsp; +18%GST </i>
-          </p>
+
+    <div class="listing-filter-controls">
+      <div>
+        <label class="form-label" for="minPrice">Minimum price</label>
+        <input class="form-control" id="minPrice" name="minPrice" type="number" min="0" step="0.01" value="<%=filters.minPrice%>" placeholder="No minimum"/>
+      </div>
+      <div>
+        <label class="form-label" for="maxPrice">Maximum price</label>
+        <input class="form-control" id="maxPrice" name="maxPrice" type="number" min="0" step="0.01" value="<%=filters.maxPrice%>" placeholder="No maximum"/>
+      </div>
+      <div>
+        <label class="form-label" for="sort">Sort by</label>
+        <select class="form-select" id="sort" name="sort">
+          <option value="" <%=filters.sort === '' ? 'selected' : ''%>>Featured</option>
+          <option value="price-asc" <%=filters.sort === 'price-asc' ? 'selected' : ''%>>Price: low to high</option>
+          <option value="price-desc" <%=filters.sort === 'price-desc' ? 'selected' : ''%>>Price: high to low</option>
+        </select>
+      </div>
+      <button class="btn btn-dark" type="submit" name="category" value="<%=filters.category%>">Apply filters</button>
+      <% if(filters.q || filters.category || filters.minPrice !== '' || filters.maxPrice !== '' || filters.sort){ %>
+        <a class="btn btn-outline-secondary" href="/listings">Clear filters</a>
+      <% } %>
+      <div class="tax-toggle">
+        <div class="form-check-reverse form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="switchCheckDefault">
+          <label class="form-check-label" for="switchCheckDefault">Display total after taxes</label>
         </div>
       </div>
-    </a>
-    <%}%>
+    </div>
+  </form>
+</div>
+
+<% if(listings.length){ %>
+  <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 mt-3">
+    <% for(let listing of listings){ %>
+      <a href="/listings/<%=listing._id%>" class="listing-link">
+        <div class="listing-card col card">
+          <img src="<%=listing.image.url%>" class="card-img-top" alt="<%=listing.title%>" style="height: 20rem"/>
+          <div class="card-img-overlay"></div>
+          <div class="card-body">
+            <p class="card-text">
+              <b><%=listing.title%></b><br/>
+              <% if(listing.category){ %><span class="listing-category"><%=listing.category%></span><br/><% } %>
+              &#8377;<%=listing.price.toLocaleString("en-IN")%>/night
+              <i class="tax-info">&nbsp;&nbsp; +18%GST </i>
+            </p>
+          </div>
+        </div>
+      </a>
+    <% } %>
   </div>
-</body>
+<% } else { %>
+  <div class="text-center py-5">
+    <h3>No stays match these filters</h3>
+    <p>Try a different destination, category, or price range.</p>
+    <a class="btn btn-outline-dark" href="/listings">Clear filters</a>
+  </div>
+<% } %>

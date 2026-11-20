@@ -1,6 +1,7 @@
 const mongoose=require("mongoose");
 const {Schema}=mongoose;
 const Review=require("./review.js");
+const listingCategories=require("../utils/listingCategories.js");
 
 let listingSchema=new mongoose.Schema({
     title:{
@@ -25,6 +26,11 @@ let listingSchema=new mongoose.Schema({
     country:{
         type:String,
         required:true
+    },
+    category:{
+        type:String,
+        enum:listingCategories.map((category)=>category.name),
+        default:"Rooms"
     },
     reviews:[
         {

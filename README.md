@@ -8,6 +8,8 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 
 ### Listing management
 - Browse all accommodation listings on the home page.
+- Search listing titles, destinations, and countries.
+- Filter listings by category and nightly price range, and sort by price.
 - Open a listing to view its title, description, owner, price, location, country, images, reviews, and map.
 - Create new listings through a logged-in user interface.
 - Edit and delete listings owned by the currently logged-in user.
@@ -17,6 +19,8 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 ### User accounts
 - Sign up with a username, email, and password.
 - Log in and log out.
+- Server-side signup validation for required fields and email format, with feedback for duplicate usernames.
+- Successful signup automatically logs the user in.
 - Session-based authentication with Passport Local.
 - MongoDB-backed session storage.
 - Redirect users back to their originally requested page after login.
@@ -84,6 +88,7 @@ Wanderlust/
 │   └── data.js            # Sample listing data
 └── utils/
     ├── expressError.js     # Custom HTTP error class
+    ├── listingCategories.js # Shared listing category definitions
     └── wrapAsync.js        # Async route error wrapper
 ```
 
@@ -100,6 +105,7 @@ Wanderlust/
 - Cloudinary image URL and filename
 - Price
 - Location and country
+- Category
 - Array of associated reviews
 - Owning user
 - GeoJSON `Point` geometry containing longitude and latitude
@@ -138,17 +144,23 @@ Wanderlust/
 
 ## Environment Variables
 
-Create a `.env` file in the project directory with:
+If you do not already have a `.env` file, copy `.env.example` to `.env` in the project directory, then replace the sample values with your own. Do not overwrite an existing `.env`; keep your local credentials there.
 
 ```env
 ATLASDB_URL=mongodb://127.0.0.1:27017/wanderlust
-SECRET=replace-with-a-long-random-session-secret
+SECRET=your_long_random_session_secret
 
 CLOUD_NAME=your_cloudinary_cloud_name
 CLOUD_API_KEY=your_cloudinary_api_key
 CLOUD_API_SECRET=your_cloudinary_api_secret
 
 MAP_TOKEN=your_mapbox_public_access_token
+```
+
+For PowerShell, copy the template with:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 For MongoDB Atlas, set `ATLASDB_URL` to the Atlas connection string. The application will not start successfully if the database connection string is missing or invalid.
@@ -201,8 +213,6 @@ The application includes custom HTTP errors and an async route wrapper. Invalid 
 
 ## Current Limitations
 
-- The navbar search form is currently visual and does not submit a search query to a backend route.
-- Category filters on the home page are currently display-only and do not filter listings.
 - The project has no automated test suite (`npm test` is only a placeholder).
 - No booking or payment flow is implemented.
 - The 18% GST shown on listing cards is a UI demonstration; it is not connected to a checkout calculation.
