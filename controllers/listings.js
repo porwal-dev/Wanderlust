@@ -66,7 +66,14 @@ module.exports.index=async (req, res) => {
       listingsQuery=listingsQuery.sort({price:filters.sort === "price-asc" ? 1 : -1});
     }
     const listings=await listingsQuery;
-    res.render("listings/index.ejs",{listings,filters,categories:listingCategories});
+    const favoriteIds=req.user ? req.user.favorites.map((id)=>id.toString()) : [];
+    res.render("listings/index.ejs",{
+      listings,
+      filters,
+      categories:listingCategories,
+      favoriteIds,
+      returnTo:req.originalUrl
+    });
   };
 
 module.exports.renderNewForm=(req, res) => {
@@ -107,7 +114,11 @@ module.exports.createListing=async (req, res, next) => {
         req.flash("error","Listing u requested for DNE!");
         return res.redirect("/listings");
       }
-      res.render("listings/show.ejs", {listing});
+      const favoriteIds=req.user ? req.user.favorites.map((favoriteId)=>favoriteId.toString()) : [];
+      res.render("listings/show.ejs",{
+        listing,
+        isFavorite:favoriteIds.includes(listing._id.toString())
+      });
     };
 
     module.exports.renderEditForm=async (req, res) => {

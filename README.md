@@ -19,6 +19,7 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 - Hosts can confirm or decline pending booking requests for their own listings.
 - Guests can view and cancel their pending or confirmed bookings.
 - Confirmed bookings prevent other requests for overlapping dates from being confirmed.
+- Logged-in users can save listings to a favorites list and remove them later.
 
 ### User accounts
 - Sign up with a username, email, and password.
@@ -70,6 +71,7 @@ Wanderlust/
 ├── controllers/
 │   ├── listings.js        # Listing CRUD and geocoding logic
 │   ├── bookings.js        # Guest requests, bookings, and host decisions
+│   ├── favorites.js       # Save/remove listings and render favorites
 │   ├── reviews.js         # Review create/delete logic
 │   └── user.js            # Signup, login, and logout logic
 ├── models/
@@ -80,6 +82,7 @@ Wanderlust/
 ├── routes/
 │   ├── listing.js         # /listings routes
 │   ├── bookings.js        # Guest and host booking-management routes
+│   ├── favorites.js       # /favorites routes
 │   ├── review.js          # Nested review routes
 │   └── user.js            # Signup, login, and logout routes
 ├── views/
@@ -87,6 +90,7 @@ Wanderlust/
 │   ├── includes/          # Navbar and flash/footer partials
 │   ├── listings/          # Listing pages and error page
 │   ├── bookings/          # Guest bookings and host requests
+│   ├── favorites/         # Saved stays page
 │   └── users/             # Signup and login pages
 ├── public/
 │   ├── css/               # Application styles
@@ -105,6 +109,7 @@ Wanderlust/
 ### User
 - `username` and password fields are handled by `passport-local-mongoose`.
 - `email` is required.
+- Saved listings are stored as references to Listing documents.
 - A user can own listings and author reviews.
 
 ### Listing
@@ -148,6 +153,9 @@ Wanderlust/
 | `POST` | `/bookings/:bookingId/confirm` | Confirm a pending request |
 | `POST` | `/bookings/:bookingId/decline` | Decline a pending request |
 | `POST` | `/bookings/:bookingId/cancel` | Cancel your booking |
+| `GET` | `/favorites` | View your saved listings |
+| `POST` | `/favorites/:listingId` | Save a listing |
+| `POST` | `/favorites/:listingId/remove` | Remove a saved listing |
 | `POST` | `/listings/:id/reviews` | Add review |
 | `DELETE` | `/listings/:id/reviews/:reviewId` | Delete review |
 | `GET/POST` | `/signup` | Signup form and account creation |
@@ -222,6 +230,7 @@ Use it only on a disposable database and with a matching user ID if you want see
 ## Authorization Rules
 
 - Users must be logged in to create listings, reviews, or booking requests.
+- Users must be logged in to save or manage favorites.
 - Only a listing owner can edit or delete that listing.
 - Only a listing owner can confirm or decline its booking requests.
 - Guests can only view or cancel their own bookings.
