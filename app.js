@@ -15,12 +15,14 @@ const flash=require("connect-flash");
 const passport=require("passport");
 const LocalStrategy=require("passport-local");
 const User= require("./models/user.js");
-const Listing=require("./models/listing.js");
 const wrapAsync=require("./utils/wrapAsync.js");
+const listingController=require("./controllers/listings.js");
 
 const listingRouter=require("./routes/listing.js");
 const reviewRouter=require("./routes/review.js");
 const userRouter=require("./routes/user.js");
+const bookingRouter=require("./routes/bookings.js");
+const favoritesRouter=require("./routes/favorites.js");
 
 const dbUrl=process.env.ATLASDB_URL;
 
@@ -56,7 +58,7 @@ const store=MongoStore.create({
   touchAfter: 24 * 3600,
 });
 
-store.on("error",()=>{
+store.on("error",(err)=>{
   console.log("Error in Mongo Session Store",err);
 });
 
@@ -92,16 +94,15 @@ app.use((req,res,next)=>{
   next();
 });
 
-app.get("/",wrapAsync(async(req,res)=>{
-    let listings = await Listing.find({});
-    res.render("listings/index.ejs", { listings });
-}));
+app.get("/",wrapAsync(listingController.index));
 //listings-Phase1 - Only 1 line
 app.use("/listings",listingRouter);
 //Phase-2 Review Model
 app.use("/listings/:id/reviews",reviewRouter);
 //User Model
 app.use("/",userRouter);
+app.use("/bookings",bookingRouter);
+app.use("/favorites",favoritesRouter);
 
 
 //Wrong request

@@ -22,6 +22,15 @@
           <div class="valid-feedback">Title looks good</div>
         </div>
         <div class="mb-3">
+          <label for="category" class="form-label">Category</label>
+          <select class="form-select" name="listing[category]" id="category" required>
+            <option value="" selected disabled>Choose a category</option>
+            <% for(let category of categories){ %>
+              <option value="<%=category.name%>"><%=category.name%></option>
+            <% } %>
+          </select>
+        </div>
+        <div class="mb-3">
           <label for="description" class="form-label">Description</label>
           <textarea
             class="form-control"
