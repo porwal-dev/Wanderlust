@@ -19,6 +19,7 @@
 
 //Home Page Scripting
   let taxSwitch=document.getElementById("switchCheckDefault");
+if(taxSwitch){
   taxSwitch.addEventListener("click",()=>{
     let taxInfo=document.getElementsByClassName("tax-info");
     for(info of taxInfo){
@@ -28,5 +29,6 @@
       else{
         info.style.display="none";
       }
-    }
+      }
   });
+}

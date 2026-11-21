@@ -1,0 +1,36 @@
+<% layout("/layouts/boilerplate") %>
+<div class="row mt-4">
+  <div class="col-10 offset-1">
+    <h2>Host booking requests</h2>
+    <p>Review and respond to requests for your listings.</p>
+    <% if(bookings.length){ %>
+      <% for(let booking of bookings){ %>
+        <div class="card mb-3 p-3">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h4><%=booking.listing ? booking.listing.title : "Listing unavailable"%></h4>
+              <p class="mb-1">Guest: <%=booking.guest ? booking.guest.username : "Guest unavailable"%></p>
+              <p class="mb-1">Check-in: <%=booking.checkIn.toLocaleDateString()%></p>
+              <p class="mb-1">Check-out: <%=booking.checkOut.toLocaleDateString()%></p>
+              <p class="mb-1">Guests: <%=booking.guests%></p>
+              <p class="mb-1">Total: &#8377;<%=booking.totalPrice.toLocaleString("en-IN")%></p>
+            </div>
+            <span class="badge text-bg-<%=booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : 'secondary'%>"><%=booking.status%></span>
+          </div>
+          <% if(booking.status === "pending"){ %>
+            <div class="d-flex gap-2 mt-2">
+              <form method="post" action="/bookings/<%=booking._id%>/confirm">
+                <button class="btn btn-success btn-sm" type="submit">Confirm</button>
+              </form>
+              <form method="post" action="/bookings/<%=booking._id%>/decline">
+                <button class="btn btn-outline-danger btn-sm" type="submit">Decline</button>
+              </form>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div class="alert alert-info">You do not have any booking requests yet.</div>
+    <% } %>
+  </div>
+</div>

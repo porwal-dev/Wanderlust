@@ -1,15 +1,83 @@
 const Listing=require("../models/listing.js");
+const Booking=require("../models/booking.js");
 const mbxgeocodingClient = require('@mapbox/mapbox-sdk/services/geocoding');
+const Joi=require("joi");
+const listingCategories=require("../utils/listingCategories.js");
 const mapToken=process.env.MAP_TOKEN;
 const geocodingClient = mbxgeocodingClient({ accessToken: mapToken });
 
+const categoryNames=listingCategories.map((category)=>category.name);
+const listingFilterSchema=Joi.object({
+  q:Joi.string().trim().max(100).allow(""),
+  category:Joi.string().valid(...categoryNames).allow(""),
+  minPrice:Joi.number().min(0).allow(""),
+  maxPrice:Joi.number().min(0).allow(""),
+  sort:Joi.string().valid("","price-asc","price-desc").allow("")
+}).unknown(false);
+
+const escapeRegex=(value)=>value.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+
 module.exports.index=async (req, res) => {
-    let listings = await Listing.find({});
-    res.render("listings/index.ejs", { listings });
+    const {error,value}=listingFilterSchema.validate(req.query);
+    if(error){
+      req.flash("error","Please check your listing filters and try again.");
+      return res.redirect("/listings");
+    }
+
+    const filters={
+      q:value.q || "",
+      category:value.category || "",
+      minPrice:value.minPrice === undefined ? "" : value.minPrice,
+      maxPrice:value.maxPrice === undefined ? "" : value.maxPrice,
+      sort:value.sort || ""
+    };
+
+    if(filters.minPrice !== "" && filters.maxPrice !== "" && filters.minPrice > filters.maxPrice){
+      req.flash("error","Minimum price cannot be greater than maximum price.");
+      return res.redirect("/listings");
+    }
+
+    const criteria={};
+    if(filters.q){
+      const search=new RegExp(escapeRegex(filters.q),"i");
+      criteria.$or=[
+        {title:search},
+        {location:search},
+        {country:search}
+      ];
+    }
+    if(filters.category){
+      criteria.category=filters.category;
+    }
+
+    const price={};
+    if(filters.minPrice !== ""){
+      price.$gte=filters.minPrice;
+    }
+    if(filters.maxPrice !== ""){
+      price.$lte=filters.maxPrice;
+    }
+    if(Object.keys(price).length){
+      criteria.price=price;
+    }
+
+    let listingsQuery=Listing.find(criteria);
+    if(filters.sort){
+      listingsQuery=listingsQuery.sort({price:filters.sort === "price-asc" ? 1 : -1});
+    }
+    const listings=await listingsQuery;
+    const favoriteIds=req.user ? req.user.favorites.map((id)=>id.toString()) : [];
+    res.render("listings/index.ejs",{
+      listings,
+      filters,
+      categories:listingCategories,
+      favoriteIds,
+      returnTo:req.originalUrl
+    });
   };
 
 module.exports.renderNewForm=(req, res) => {
-  res.render("listings/new.ejs");
+  res.render("listings/new.ejs",{categories:listingCategories});
 };
 
 module.exports.createListing=async (req, res, next) => {
@@ -46,7 +114,11 @@ module.exports.createListing=async (req, res, next) => {
         req.flash("error","Listing u requested for DNE!");
         return res.redirect("/listings");
       }
-      res.render("listings/show.ejs", {listing});
+      const favoriteIds=req.user ? req.user.favorites.map((favoriteId)=>favoriteId.toString()) : [];
+      res.render("listings/show.ejs",{
+        listing,
+        isFavorite:favoriteIds.includes(listing._id.toString())
+      });
     };
 
     module.exports.renderEditForm=async (req, res) => {
@@ -58,7 +130,7 @@ module.exports.createListing=async (req, res, next) => {
         }
         let originalImageUrl=listing.image.url;
         originalImageUrl=originalImageUrl.replace("/upload","/upload/w_250");
-        res.render("listings/edit.ejs", { listing,originalImageUrl });
+        res.render("listings/edit.ejs", { listing,originalImageUrl,categories:listingCategories });
       };
 
     module.exports.updateListing=async (req, res) => {
@@ -88,6 +160,14 @@ module.exports.createListing=async (req, res, next) => {
 
   module.exports.destroyListing=async (req, res) => {
     let { id } = req.params;
+    const activeBooking=await Booking.exists({
+      listing:id,
+      status:{$in:["pending","confirmed"]}
+    });
+    if(activeBooking){
+      req.flash("error","This listing has pending or confirmed bookings and cannot be deleted.");
+      return res.redirect(`/listings/${id}`);
+    }
     await Listing.findByIdAndDelete(id);
     req.flash("success","Listing deleted Successfully!")
     res.redirect("/listings");

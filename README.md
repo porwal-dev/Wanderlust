@@ -8,15 +8,24 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 
 ### Listing management
 - Browse all accommodation listings on the home page.
+- Search listing titles, destinations, and countries.
+- Filter listings by category and nightly price range, and sort by price.
 - Open a listing to view its title, description, owner, price, location, country, images, reviews, and map.
 - Create new listings through a logged-in user interface.
 - Edit and delete listings owned by the currently logged-in user.
 - Upload listing images to Cloudinary.
 - Automatically geocode listing locations with Mapbox and store geographic coordinates.
+- Request a stay by selecting check-in/check-out dates and guest count.
+- Hosts can confirm or decline pending booking requests for their own listings.
+- Guests can view and cancel their pending or confirmed bookings.
+- Confirmed bookings prevent other requests for overlapping dates from being confirmed.
+- Logged-in users can save listings to a favorites list and remove them later.
 
 ### User accounts
 - Sign up with a username, email, and password.
 - Log in and log out.
+- Server-side signup validation for required fields and email format, with feedback for duplicate usernames.
+- Successful signup automatically logs the user in.
 - Session-based authentication with Passport Local.
 - MongoDB-backed session storage.
 - Redirect users back to their originally requested page after login.
@@ -61,20 +70,27 @@ Wanderlust/
 ├── schema.js              # Joi validation schemas
 ├── controllers/
 │   ├── listings.js        # Listing CRUD and geocoding logic
+│   ├── bookings.js        # Guest requests, bookings, and host decisions
+│   ├── favorites.js       # Save/remove listings and render favorites
 │   ├── reviews.js         # Review create/delete logic
 │   └── user.js            # Signup, login, and logout logic
 ├── models/
 │   ├── listing.js         # Listing schema and review cleanup hook
+│   ├── booking.js         # Booking dates, guest, price snapshot, and status
 │   ├── review.js          # Review schema
 │   └── user.js            # Passport Local user schema
 ├── routes/
 │   ├── listing.js         # /listings routes
+│   ├── bookings.js        # Guest and host booking-management routes
+│   ├── favorites.js       # /favorites routes
 │   ├── review.js          # Nested review routes
 │   └── user.js            # Signup, login, and logout routes
 ├── views/
 │   ├── layouts/           # Shared page layout
 │   ├── includes/          # Navbar and flash/footer partials
 │   ├── listings/          # Listing pages and error page
+│   ├── bookings/          # Guest bookings and host requests
+│   ├── favorites/         # Saved stays page
 │   └── users/             # Signup and login pages
 ├── public/
 │   ├── css/               # Application styles
@@ -84,6 +100,7 @@ Wanderlust/
 │   └── data.js            # Sample listing data
 └── utils/
     ├── expressError.js     # Custom HTTP error class
+    ├── listingCategories.js # Shared listing category definitions
     └── wrapAsync.js        # Async route error wrapper
 ```
 
@@ -92,6 +109,7 @@ Wanderlust/
 ### User
 - `username` and password fields are handled by `passport-local-mongoose`.
 - `email` is required.
+- Saved listings are stored as references to Listing documents.
 - A user can own listings and author reviews.
 
 ### Listing
@@ -100,6 +118,7 @@ Wanderlust/
 - Cloudinary image URL and filename
 - Price
 - Location and country
+- Category
 - Array of associated reviews
 - Owning user
 - GeoJSON `Point` geometry containing longitude and latitude
@@ -110,6 +129,12 @@ Wanderlust/
 - Creation date
 - Authoring user
 
+### Booking
+- Listing and guest references
+- Check-in/check-out dates and guest count
+- Nightly-price and total-price snapshots
+- Status: pending, confirmed, declined, or cancelled
+
 ## Routes
 
 | Method | Route | Purpose |
@@ -118,10 +143,19 @@ Wanderlust/
 | `GET` | `/listings` | Listing index |
 | `GET` | `/listings/new` | New-listing form |
 | `POST` | `/listings` | Create listing |
+| `POST` | `/listings/:id/bookings` | Request a booking |
 | `GET` | `/listings/:id` | Listing details |
 | `GET` | `/listings/:id/edit` | Edit-listing form |
 | `PUT` | `/listings/:id` | Update listing |
 | `DELETE` | `/listings/:id` | Delete listing |
+| `GET` | `/bookings` | View your guest bookings |
+| `GET` | `/bookings/host` | View requests for your listings |
+| `POST` | `/bookings/:bookingId/confirm` | Confirm a pending request |
+| `POST` | `/bookings/:bookingId/decline` | Decline a pending request |
+| `POST` | `/bookings/:bookingId/cancel` | Cancel your booking |
+| `GET` | `/favorites` | View your saved listings |
+| `POST` | `/favorites/:listingId` | Save a listing |
+| `POST` | `/favorites/:listingId/remove` | Remove a saved listing |
 | `POST` | `/listings/:id/reviews` | Add review |
 | `DELETE` | `/listings/:id/reviews/:reviewId` | Delete review |
 | `GET/POST` | `/signup` | Signup form and account creation |
@@ -138,17 +172,23 @@ Wanderlust/
 
 ## Environment Variables
 
-Create a `.env` file in the project directory with:
+If you do not already have a `.env` file, copy `.env.example` to `.env` in the project directory, then replace the sample values with your own. Do not overwrite an existing `.env`; keep your local credentials there.
 
 ```env
 ATLASDB_URL=mongodb://127.0.0.1:27017/wanderlust
-SECRET=replace-with-a-long-random-session-secret
+SECRET=your_long_random_session_secret
 
 CLOUD_NAME=your_cloudinary_cloud_name
 CLOUD_API_KEY=your_cloudinary_api_key
 CLOUD_API_SECRET=your_cloudinary_api_secret
 
 MAP_TOKEN=your_mapbox_public_access_token
+```
+
+For PowerShell, copy the template with:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 For MongoDB Atlas, set `ATLASDB_URL` to the Atlas connection string. The application will not start successfully if the database connection string is missing or invalid.
@@ -189,8 +229,12 @@ Use it only on a disposable database and with a matching user ID if you want see
 
 ## Authorization Rules
 
-- Users must be logged in to create listings or reviews.
+- Users must be logged in to create listings, reviews, or booking requests.
+- Users must be logged in to save or manage favorites.
 - Only a listing owner can edit or delete that listing.
+- Only a listing owner can confirm or decline its booking requests.
+- Guests can only view or cancel their own bookings.
+- Listings with pending or confirmed bookings cannot be deleted.
 - Only a review author can delete that review.
 - The server validates listing and review forms with Joi.
 - The UI also performs Bootstrap browser validation.
@@ -201,10 +245,8 @@ The application includes custom HTTP errors and an async route wrapper. Invalid 
 
 ## Current Limitations
 
-- The navbar search form is currently visual and does not submit a search query to a backend route.
-- Category filters on the home page are currently display-only and do not filter listings.
 - The project has no automated test suite (`npm test` is only a placeholder).
-- No booking or payment flow is implemented.
+- Booking requests require host approval; payment processing and instant booking are not implemented.
 - The 18% GST shown on listing cards is a UI demonstration; it is not connected to a checkout calculation.
 - The seed script uses a fixed owner ID and a separate local database connection.
 - Cloudinary, Mapbox, and MongoDB credentials must be configured before the related features can work.

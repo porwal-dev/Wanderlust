@@ -8,7 +8,7 @@ const userController=require("../controllers/user.js");
 //SignUp Form, Signup
 router.route("/signup")
 .get(userController.renderSignUpForm)
-.post(wrapAsync(userController.signUp));
+.post(saveRedirectUrl,wrapAsync(userController.signUp));
 
 //Login Form, Login
 router.route("/login")
