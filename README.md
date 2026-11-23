@@ -15,9 +15,10 @@ The project uses a server-rendered MVC architecture: Express handles routes and 
 - Edit and delete listings owned by the currently logged-in user.
 - Upload listing images to Cloudinary.
 - Automatically geocode listing locations with Mapbox and store geographic coordinates.
-- Request a stay by selecting check-in/check-out dates and guest count.
+- Pay with Stripe Checkout to request a stay by selecting check-in/check-out dates and guest count.
 - Hosts can confirm or decline pending booking requests for their own listings.
 - Guests can view and cancel their pending or confirmed bookings.
+- Paid bookings record Stripe payment details; the app attempts refunds automatically when a host declines or a guest cancels an eligible paid booking.
 - Confirmed bookings prevent other requests for overlapping dates from being confirmed.
 - Logged-in users can save listings to a favorites list and remove them later.
 
@@ -133,6 +134,7 @@ Wanderlust/
 - Listing and guest references
 - Check-in/check-out dates and guest count
 - Nightly-price and total-price snapshots
+- Currency, payment status, and Stripe Checkout/payment identifiers
 - Status: pending, confirmed, declined, or cancelled
 
 ## Routes
@@ -143,16 +145,18 @@ Wanderlust/
 | `GET` | `/listings` | Listing index |
 | `GET` | `/listings/new` | New-listing form |
 | `POST` | `/listings` | Create listing |
-| `POST` | `/listings/:id/bookings` | Request a booking |
+| `POST` | `/listings/:id/bookings` | Start Stripe Checkout for a booking request |
 | `GET` | `/listings/:id` | Listing details |
 | `GET` | `/listings/:id/edit` | Edit-listing form |
 | `PUT` | `/listings/:id` | Update listing |
 | `DELETE` | `/listings/:id` | Delete listing |
 | `GET` | `/bookings` | View your guest bookings |
 | `GET` | `/bookings/host` | View requests for your listings |
+| `GET` | `/bookings/checkout/success` | Verify Stripe payment and create the booking request |
+| `GET` | `/bookings/checkout/cancel/:id` | Cancel Stripe Checkout and return to the listing |
 | `POST` | `/bookings/:bookingId/confirm` | Confirm a pending request |
-| `POST` | `/bookings/:bookingId/decline` | Decline a pending request |
-| `POST` | `/bookings/:bookingId/cancel` | Cancel your booking |
+| `POST` | `/bookings/:bookingId/decline` | Decline a pending request and attempt refund |
+| `POST` | `/bookings/:bookingId/cancel` | Cancel your booking and attempt refund |
 | `GET` | `/favorites` | View your saved listings |
 | `POST` | `/favorites/:listingId` | Save a listing |
 | `POST` | `/favorites/:listingId/remove` | Remove a saved listing |
@@ -169,6 +173,7 @@ Wanderlust/
 - A MongoDB Atlas cluster or a local MongoDB server
 - A Cloudinary account
 - A Mapbox access token
+- A Stripe account and test secret key (for booking payments)
 
 ## Environment Variables
 
@@ -177,12 +182,16 @@ If you do not already have a `.env` file, copy `.env.example` to `.env` in the p
 ```env
 ATLASDB_URL=mongodb://127.0.0.1:27017/wanderlust
 SECRET=your_long_random_session_secret
+BASE_URL=http://localhost:3000
 
 CLOUD_NAME=your_cloudinary_cloud_name
 CLOUD_API_KEY=your_cloudinary_api_key
 CLOUD_API_SECRET=your_cloudinary_api_secret
 
 MAP_TOKEN=your_mapbox_public_access_token
+
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret(optional)
 ```
 
 For PowerShell, copy the template with:
@@ -234,6 +243,7 @@ Use it only on a disposable database and with a matching user ID if you want see
 - Only a listing owner can edit or delete that listing.
 - Only a listing owner can confirm or decline its booking requests.
 - Guests can only view or cancel their own bookings.
+- Booking requests are paid through Stripe Checkout before being created as pending host-approval requests.
 - Listings with pending or confirmed bookings cannot be deleted.
 - Only a review author can delete that review.
 - The server validates listing and review forms with Joi.
@@ -246,10 +256,11 @@ The application includes custom HTTP errors and an async route wrapper. Invalid 
 ## Current Limitations
 
 - The project has no automated test suite (`npm test` is only a placeholder).
-- Booking requests require host approval; payment processing and instant booking are not implemented.
-- The 18% GST shown on listing cards is a UI demonstration; it is not connected to a checkout calculation.
+- Stripe payments use Checkout and success-URL verification; webhooks are not implemented. Use a Stripe test secret key and ensure `BASE_URL` matches the running app URL.
+- Automatic refunds are attempted when a paid booking is declined, cancelled, or becomes unavailable after payment, but refund failures may require manual handling in Stripe.
+- The 18% GST shown on listing cards is a UI demonstration; it is not the same as the Stripe checkout amount.
 - The seed script uses a fixed owner ID and a separate local database connection.
-- Cloudinary, Mapbox, and MongoDB credentials must be configured before the related features can work.
+- Cloudinary, Mapbox, MongoDB, and Stripe credentials must be configured before the related features can work.
 
 ## Security Notes
 

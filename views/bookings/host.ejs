@@ -14,6 +14,7 @@
               <p class="mb-1">Check-out: <%=booking.checkOut.toLocaleDateString()%></p>
               <p class="mb-1">Guests: <%=booking.guests%></p>
               <p class="mb-1">Total: &#8377;<%=booking.totalPrice.toLocaleString("en-IN")%></p>
+              <p class="mb-1">Payment: <%=booking.paymentStatus || 'unpaid'%></p>
             </div>
             <span class="badge text-bg-<%=booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : 'secondary'%>"><%=booking.status%></span>
           </div>
