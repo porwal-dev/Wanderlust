@@ -34,7 +34,7 @@
           <div class="col-6 offset-3 mb-3">
             <div class="card p-3">
               <h4>Request a booking</h4>
-              <p>&#8377;<%=listing.price.toLocaleString("en-IN")%> per night. Your request must be confirmed by the host.</p>
+              <p>&#8377;<%=listing.price.toLocaleString("en-IN")%> per night. Pay securely with Stripe to send your request. The host must confirm it before the stay is finalized, and the payment is refunded if the host declines or you cancel an eligible booking.</p>
               <form method="post" action="/listings/<%=listing._id%>/bookings" class="needs-validation" novalidate>
                 <div class="row">
                   <div class="col-md-4 mb-3">
@@ -53,7 +53,7 @@
                     <div class="invalid-feedback">At least one guest is required.</div>
                   </div>
                 </div>
-                <button class="btn btn-dark" type="submit">Send booking request</button>
+                <button class="btn btn-dark" type="submit">Pay & request booking</button>
               </form>
             </div>
           </div>

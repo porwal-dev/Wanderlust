@@ -34,14 +34,30 @@ const bookingSchema=new mongoose.Schema({
         required:true,
         min:0
     },
+    currency:{
+        type:String,
+        default:"inr"
+    },
     status:{
         type:String,
         enum:["pending","confirmed","declined","cancelled"],
         default:"pending"
+    },
+    paymentStatus:{
+        type:String,
+        enum:["unpaid","paid","refunded","refund_failed"],
+        default:"unpaid"
+    },
+    stripeSessionId:{
+        type:String
+    },
+    stripePaymentIntentId:{
+        type:String
     }
 },{timestamps:true});
 
 bookingSchema.index({listing:1,status:1,checkIn:1,checkOut:1});
 bookingSchema.index({guest:1,createdAt:-1});
+bookingSchema.index({stripeSessionId:1});
 
 module.exports=mongoose.model("Booking",bookingSchema);
